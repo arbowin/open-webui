@@ -85,6 +85,9 @@ async def root():
         "name": WEBUI_NAME,
         "version": WEBUI_VERSION,
         "description": "Open WebUI — A user-friendly web interface for LLMs",
+        # Added environment field so I can quickly confirm which env is running
+        # when hitting the root endpoint during local development.
+        "environment": ENV,
     }
 
 
