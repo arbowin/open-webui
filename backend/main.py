@@ -97,11 +97,13 @@ if __name__ == "__main__":
     # Default port changed to 8000 to avoid conflict with other local services on 8080.
     # reload_dirs set explicitly so uvicorn only watches the backend directory,
     # avoiding unnecessary reloads triggered by frontend asset changes.
+    # workers=1 is explicit here; bumping to 2 locally causes session issues with
+    # in-memory state during development, so keeping it pinned to 1.
     uvicorn.run(
         "main:app",
         host="0.0.0.0",
         port=int(os.environ.get("PORT", 8000)),
         reload=(ENV != "prod"),
-        reload_dirs=["."] if ENV != "prod" else None,
-        log_level="info",
+        reload_dirs=["." ] if ENV != "prod" else None,
+        workers=1,
     )
