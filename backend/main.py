@@ -47,7 +47,7 @@ app.add_middleware(
     SessionMiddleware,
     secret_key=SECRET_KEY,
     session_cookie="open-webui-session",
-    max_age=14 * 24 * 60 * 60,  # 14 days
+    max_age=30 * 24 * 60 * 60,  # 30 days — extended from 14 for personal convenience
     same_site="lax",
     https_only=(ENV == "prod"),
 )
