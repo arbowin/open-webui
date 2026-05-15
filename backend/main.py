@@ -91,10 +91,11 @@ async def root():
 if __name__ == "__main__":
     import uvicorn
 
+    # Default port changed to 8000 to avoid conflict with other local services on 8080
     uvicorn.run(
         "main:app",
         host="0.0.0.0",
-        port=int(os.environ.get("PORT", 8080)),
+        port=int(os.environ.get("PORT", 8000)),
         reload=(ENV != "prod"),
         log_level="info",
     )
