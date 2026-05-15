@@ -1,0 +1,100 @@
+import os
+import sys
+import logging
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from starlette.middleware.sessions import SessionMiddleware
+
+from config import (
+    WEBUI_NAME,
+    WEBUI_VERSION,
+    CORS_ALLOW_ORIGIN,
+    SECRET_KEY,
+    ENV,
+)
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO if ENV == "prod" else logging.DEBUG,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[logging.StreamHandler(sys.stdout)],
+)
+log = logging.getLogger(__name__)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Application lifespan handler for startup and shutdown events."""
+    log.info(f"Starting {WEBUI_NAME} v{WEBUI_VERSION}")
+    log.info(f"Environment: {ENV}")
+    yield
+    log.info(f"Shutting down {WEBUI_NAME}")
+
+
+app = FastAPI(
+    title=WEBUI_NAME,
+    version=WEBUI_VERSION,
+    docs_url="/docs" if ENV != "prod" else None,
+    redoc_url="/redoc" if ENV != "prod" else None,
+    lifespan=lifespan,
+)
+
+# Session middleware must be added before CORS
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=SECRET_KEY,
+    session_cookie="open-webui-session",
+    max_age=14 * 24 * 60 * 60,  # 14 days
+    same_site="lax",
+    https_only=(ENV == "prod"),
+)
+
+# CORS middleware configuration
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=CORS_ALLOW_ORIGIN,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """Global exception handler for unhandled errors."""
+    log.error(f"Unhandled exception: {exc}", exc_info=True)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "An internal server error occurred."},
+    )
+
+
+@app.get("/health")
+async def health_check():
+    """Health check endpoint for load balancers and monitoring."""
+    return {"status": "ok", "version": WEBUI_VERSION}
+
+
+@app.get("/")
+async def root():
+    """Root endpoint returning basic application info."""
+    return {
+        "name": WEBUI_NAME,
+        "version": WEBUI_VERSION,
+        "description": "Open WebUI — A user-friendly web interface for LLMs",
+    }
+
+
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run(
+        "main:app",
+        host="0.0.0.0",
+        port=int(os.environ.get("PORT", 8080)),
+        reload=(ENV != "prod"),
+        log_level="info",
+    )
