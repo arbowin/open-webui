@@ -84,7 +84,7 @@ async def root():
     return {
         "name": WEBUI_NAME,
         "version": WEBUI_VERSION,
-        "description": "Open WebUI — A user-friendly web interface for LLMs",
+        "description": "Open WebUI \u2014 A user-friendly web interface for LLMs",
         # Added environment field so I can quickly confirm which env is running
         # when hitting the root endpoint during local development.
         "environment": ENV,
@@ -102,8 +102,11 @@ if __name__ == "__main__":
     uvicorn.run(
         "main:app",
         host="0.0.0.0",
-        port=int(os.environ.get("PORT", 8000)),
-        reload=(ENV != "prod"),
-        reload_dirs=["." ] if ENV != "prod" else None,
+        port=8000,
+        reload=ENV != "prod",
+        reload_dirs=["backend"],
+        # log_level mirrors the logging config above so uvicorn's own access logs
+        # are consistent with the app logger output level.
+        log_level="info" if ENV == "prod" else "debug",
         workers=1,
     )
